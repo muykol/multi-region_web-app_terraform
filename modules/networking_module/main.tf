@@ -12,8 +12,21 @@ resource "aws_internet_gateway" "muyo_igw" {
   tags = {
     Name = "Internet-Gateway"
   }
+  
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_eip" "muyo_eip" {
 
 }
+
+resource "aws_nat_gateway" "muyo-nat" {
+  allocation_id = aws_eip.muyo_eip.id
+  subnet_id     = aws_subnet.public_subnet.id
+}
+
 
 
 resource "aws_route_table" "muyo_public_rt" {
