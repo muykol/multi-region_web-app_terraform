@@ -70,3 +70,21 @@ resource "aws_subnet" "private_subnet" {
 }
 
 
+resource "aws_security_group" "muyo_sg" {
+  name        = "public_firewall"
+  description = "Firewall for Public Access"
+  vpc_id      = aws_vpc.muyo_vpc.id
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
