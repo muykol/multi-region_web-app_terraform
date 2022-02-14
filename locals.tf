@@ -2,7 +2,7 @@
 locals {
   security_groups = {
     public = {
-      name = "alb-firewall"
+      name = "alb_sg"
       ingress = {
         http = {
           from        = 80
@@ -13,7 +13,7 @@ locals {
       }
     }
     private = {
-      name = "web-firewall"
+      name = "web_sg"
       ingress = {
         http = {
           from        = 8080

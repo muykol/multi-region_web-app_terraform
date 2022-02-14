@@ -84,7 +84,7 @@ resource "aws_route_table_association" "private-rt_assoc" {
   route_table_id = aws_route_table.muyo_private_rt.id
 }
 
-resource "aws_security_group" "public_sg" {
+resource "aws_security_group" "muyo_sg" {
   for_each = var.security_groups
   name        = each.value.name
   vpc_id      = aws_vpc.muyo_vpc.id
