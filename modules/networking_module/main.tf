@@ -6,6 +6,25 @@ resource "aws_vpc" "muyo_vpc" {
   enable_dns_support = "true"
 }
 
+resource "aws_subnet" "public_subnet" {
+  vpc_id = aws_vpc.muyo_vpc.id
+  cidr_block = var.public_subnet
+  map_public_ip_on_launch = true
+    
+  tags = {
+    Name = "pub-subnet"
+  }
+}
+
+resource "aws_subnet" "private_subnet" {
+  vpc_id = aws_vpc.muyo_vpc.id
+  cidr_block = var.private_subnet
+    
+  tags = {
+    Name = "priv-subnet"
+  }
+}
+
 resource "aws_internet_gateway" "muyo_igw" {
   vpc_id = aws_vpc.muyo_vpc.id
     
@@ -27,8 +46,6 @@ resource "aws_nat_gateway" "muyo-nat" {
   subnet_id     = aws_subnet.public_subnet.id
 }
 
-
-
 resource "aws_route_table" "muyo_public_rt" {
   vpc_id = aws_vpc.muyo_vpc.id
 
@@ -37,20 +54,10 @@ resource "aws_route_table" "muyo_public_rt" {
   }
 }
 
-
 resource "aws_route" "default_route" {
   route_table_id         = aws_route_table.muyo_public_rt.id
   destination_cidr_block = "0.0.0.0/0"
   gateway_id             = aws_internet_gateway.muyo_igw.id
-}
-
-
-resource "aws_default_route_table" "muyo_private_rt" {
-  default_route_table_id = aws_vpc.muyo_vpc.default_route_table_id
-
-  tags = {
-    Name = "muyo-private-route"
-  }
 }
 
 resource "aws_route_table_association" "public-rt_assoc" {
@@ -58,42 +65,41 @@ resource "aws_route_table_association" "public-rt_assoc" {
   route_table_id = aws_route_table.muyo_public_rt.id
 }
 
-
-
-resource "aws_subnet" "public_subnet" {
+resource "aws_route_table" "muyo_private_rt" {
   vpc_id = aws_vpc.muyo_vpc.id
-  cidr_block = var.public_subnet
-    
-    
-  tags = {
-    Name = "pub-subnet"
-  }
 
+  tags = {
+    Name = "muyo-private-route"
+  }
 }
 
-resource "aws_subnet" "private_subnet" {
-  vpc_id = aws_vpc.muyo_vpc.id
-  cidr_block = var.private_subnet
-    
-    
-  tags = {
-    Name = "priv-subnet"
-  }
-
+resource "aws_route" "default_private_route" {
+  route_table_id         = aws_route_table.muyo_private_rt.id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id         = aws_nat_gateway.muyo-nat.id
 }
 
+resource "aws_route_table_association" "private-rt_assoc" {
+  subnet_id      = aws_subnet.private_subnet.id
+  route_table_id = aws_route_table.muyo_private_rt.id
+}
 
-resource "aws_security_group" "muyo_sg" {
-  name        = "web_firewall"
-  description = "Firewall for Public Access"
+resource "aws_security_group" "public_sg" {
+  for_each = var.security_groups
+  name        = each.value.name
   vpc_id      = aws_vpc.muyo_vpc.id
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 
+  #public Security Group
+  dynamic "ingress" {
+    for_each = each.value.ingress
+    content {
+      from_port   = ingress.value.from
+      to_port     = ingress.value.to
+      protocol    = ingress.value.protocol
+      cidr_blocks = ingress.value.cidr_blocks
+    }
+  }
+  
   egress {
     from_port   = 0
     to_port     = 0
@@ -101,3 +107,4 @@ resource "aws_security_group" "muyo_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
